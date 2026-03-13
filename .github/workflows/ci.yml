@@ -28,4 +28,4 @@ jobs:
           script: |
             cd /home/github/gamebook/frontend/
             npm install
-            npm run dev
+            pm2 start npm --name "vue-app" -- run start

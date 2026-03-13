@@ -48,28 +48,8 @@ export const useAuthStore = defineStore('auth', () => {
         isAuthenticated: true
       }
       return { success: true }
-    } catch (err) {
+    } catch (err: any) {
       return { success: false, error: err?.response.data.error }
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  const refresh = async (credentials: AuthCredentials) => {
-    isLoading.value = true
-    error.value = null
-
-    try {
-      await authService.refresh(credentials)
-      user.value = {
-        name: credentials.name,
-        isAuthenticated: true
-      }
-      return { success: true }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Ошибка обновления токена'
-      error.value = errorMessage
-      return { success: false, error: errorMessage }
     } finally {
       isLoading.value = false
     }
@@ -172,7 +152,6 @@ export const useAuthStore = defineStore('auth', () => {
     // Действия
     register,
     login,
-    refresh,
     logout,
     checkAuth,
     clearError,

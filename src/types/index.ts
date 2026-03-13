@@ -132,11 +132,16 @@ export interface Bonus {
   option?: BonusOption;
 }
 
+export interface Meds {
+  Name: string;
+  Count: number;
+}
+
 export interface Profile {
   health: number;
   max_health: number;
   weapons: Weapon[];
-  meds: number;
+  meds: Meds;
   bag: Bag[];
   debuff: Debuff[];
   buff: Buff[];

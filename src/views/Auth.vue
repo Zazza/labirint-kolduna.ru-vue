@@ -181,7 +181,6 @@ const toggleMode = () => {
 }
 
 .footnote {
-  //border: 1px solid #f4e4c1;
   background: #f4e4c1;
   padding: 25px 30px;
   margin: 40px 0;
@@ -278,16 +277,6 @@ const toggleMode = () => {
   background: #4a3d2e;
 }
 
-.btn-secondary {
-  background: #f5f0e6;
-  color: #5c4d3c;
-  border: 1px solid #d4c5b0;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: #ebe5d5;
-}
-
 .btn-link {
   background: none;
   color: #8b7355;
@@ -297,12 +286,5 @@ const toggleMode = () => {
 .btn-link:hover:not(:disabled) {
   color: #6b5540;
   text-decoration: underline;
-}
-
-.user-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  margin-top: 30px;
 }
 </style>

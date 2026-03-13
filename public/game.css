@@ -1,0 +1,197 @@
+body {
+    font-family: "Garamond", "Times New Roman", serif;
+    font-weight: 400;
+    text-rendering: optimizeLegibility;
+    font-variant-ligatures: contextual;
+    -webkit-overflow-scrolling: touch;
+    -webkit-text-size-adjust: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* Контейнер книги */
+.book-container {
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 40px 20px;
+    background: #cccccc;
+}
+
+/* Страница книги - старый пергамент */
+.book-page {
+    max-width: 700px;
+    width: 100%;
+    background-color: #f4e4c1;
+    background-image:
+        /* Текстура пергамента */
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E"),
+        /* Градиент старения - светлее в центре */
+        radial-gradient(ellipse at center, #f7edd5 0%, #f0d9a3 50%, #e8c882 100%);
+    padding: 60px 80px;
+    box-shadow:
+            /* Тень от переплёта */
+            -12px 0 30px rgba(0, 0, 0, 0.4),
+            12px 0 30px rgba(0, 0, 0, 0.25),
+            /* Обводка страницы */
+            inset 0 0 80px rgba(139, 69, 19, 0.08),
+            0 0 0 1px #c9b896;
+    position: relative;
+}
+
+/* Линия переплёта по центру */
+.book-page .book-spine {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 40px;
+    transform: translateX(-50%);
+    background: linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0.08) 0%,
+        rgba(0, 0, 0, 0.15) 30%,
+        rgba(0, 0, 0, 0.2) 50%,
+        rgba(0, 0, 0, 0.15) 70%,
+        rgba(0, 0, 0, 0.08) 100%
+    );
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* Эффект загрязнения/старения по краям */
+.book-page::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+        /* Пятна старения */
+        radial-gradient(ellipse at 0% 0%, rgba(139, 69, 19, 0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 100% 100%, rgba(139, 69, 19, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 0% 100%, rgba(101, 67, 33, 0.08) 0%, transparent 40%),
+        radial-gradient(ellipse at 100% 0%, rgba(101, 67, 33, 0.08) 0%, transparent 40%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Эффект изношенности - царапины и потёртости */
+.book-page::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+        repeating-linear-gradient(
+            105deg,
+            transparent 0px,
+            transparent 2px,
+            rgba(101, 67, 33, 0.03) 2px,
+            rgba(101, 67, 33, 0.03) 4px
+        );
+    pointer-events: none;
+    z-index: 1;
+}
+
+.player-bar {
+    margin-bottom: 44px;
+    padding-bottom: 24px;
+    border-bottom: 1px dashed #8b4513;
+}
+
+.player-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+}
+
+.stat {
+    font-size: 14px;
+    color: #8b4513;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.stat:hover {
+    color: #a0522d;
+    background: rgba(139, 69, 19, 0.1);
+}
+
+.stat.bonus {
+    color: #b8860b;
+}
+
+.chapter-header {
+    text-align: center;
+    padding-bottom: 24px;
+}
+
+.section-text {
+    font-size: 18px;
+    line-height: 1.9;
+    color: #3d2817;
+    text-align: justify;
+    white-space: pre-wrap;
+    text-shadow: 0 0 0.5px rgba(0, 0, 0, 0.1);
+}
+
+/* Красная строка - отступ первой строки каждого абзаца */
+.section-text :deep(p) {
+    margin-bottom: 1.5em;
+    text-indent: 2em;
+}
+
+/* Отступ между абзацами */
+.section-text :deep(p + p) {
+    margin-top: 1.5em;
+}
+
+.section-text > .section-log {
+    font-size: 15px;
+    color: #5a4a3a;
+    padding: 8px 12px;
+    margin-bottom: 4px;
+    border-radius: 4px;
+}
+
+.chapter-number {
+    font-size: 28px;
+    font-weight: normal;
+    color: #3d2817;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    text-shadow: 1px 1px 0 rgba(139, 69, 19, 0.15);
+}
+
+a {
+    color: #8b4513;
+    cursor: pointer;
+    text-decoration: none;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+/* Адаптивность */
+@media screen and (max-width: 768px) {
+    .book-container {
+        padding: 20px 10px;
+    }
+
+    .book-page {
+        padding: 40px 24px;
+    }
+
+    .chapter-number {
+        font-size: 22px;
+    }
+
+    .section-text {
+        font-size: 16px;
+    }
+}

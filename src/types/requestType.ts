@@ -1,0 +1,12 @@
+import {httpService} from "@/services/http.ts";
+export const Choice = 'choice';
+export const Move =  'move';
+export const SetBattle =  'setBattle';
+export const GetBattle =  'getBattle';
+export const Profile =  'profile';
+export const Meds =  'meds';
+export const Bonus =  'bonus';
+export const Sleep =  'sleep';
+export const SleepyChoice =  'sleepyChoice';
+export const BribeChoice =  'bribeChoice';
+export const RollTheDice =  'rollTheDice';

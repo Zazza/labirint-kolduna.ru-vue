@@ -63,7 +63,16 @@ const calculateLayout = (sections: MapSection[], transitions: MapTransition[], c
   edges: EdgeWithPositions[]
   requiredHeight: number
 } => {
-  const sortedSections = [...sections].sort((a, b) => a.number - b.number)
+  // Защита от undefined/null
+  const safeSections = sections ?? []
+  const safeTransitions = transitions ?? []
+
+  // Если нет секций, возвращаем пустой результат
+  if (safeSections.length === 0) {
+    return { nodes: [], edges: [], requiredHeight: PADDING_Y * 2 + LEVEL_HEIGHT }
+  }
+
+  const sortedSections = [...safeSections].sort((a, b) => a.number - b.number)
 
   const nodeMap = new Map<number, NodeWithPosition>()
 
@@ -112,7 +121,7 @@ const calculateLayout = (sections: MapSection[], transitions: MapTransition[], c
 
   const transitionMap = new Map<number, number[]>()
 
-  transitions.forEach(transition => {
+  safeTransitions.forEach(transition => {
     if (transition.from_section === 9 || transition.to_section === 9) {
       return
     }
@@ -122,6 +131,37 @@ const calculateLayout = (sections: MapSection[], transitions: MapTransition[], c
     }
     transitionMap.get(transition.from_section)?.push(transition.to_section)
   })
+
+  // Если нет transitions, используем сеточную раскладку
+  if (safeTransitions.length === 0) {
+    const nodesPerRow = Math.ceil(Math.sqrt(safeSections.length))
+    let index = 0
+    sortedSections.forEach(section => {
+      const node = nodeMap.get(section.number)
+      if (node) {
+        const row = Math.floor(index / nodesPerRow)
+        const col = index % nodesPerRow
+        const levelWidth = width - 2 * PADDING_X
+        const spacing = Math.max(MIN_NODE_SPACING, levelWidth / Math.max(1, nodesPerRow - 1))
+        node.x = PADDING_X + col * spacing
+        node.y = PADDING_Y + row * LEVEL_HEIGHT
+        index++
+      }
+    })
+    const rows = Math.ceil(safeSections.length / nodesPerRow)
+    const newRequiredHeight = PADDING_Y * 2 + rows * LEVEL_HEIGHT
+    return { nodes: Array.from(nodeMap.values()), edges: [], requiredHeight: newRequiredHeight }
+  }
+
+  // Находим корневые секции (на которые нет входящих переходов)
+  const targetSections = new Set(safeTransitions.map(t => t.to_section))
+  const rootCandidates = safeSections.filter(s => !targetSections.has(s.number))
+
+  // Находим минимальный номер секции
+  const minNumber = Math.min(...safeSections.map(s => s.number))
+
+  // Используем первую корневую секцию или секцию с минимальным номером
+  const rootNumber = rootCandidates.length > 0 ? rootCandidates[0].number : minNumber
 
   const calculateDepth = (nodeNumber: number, depth: number, visited: Set<number>): void => {
     if (visited.has(nodeNumber)) return
@@ -136,7 +176,7 @@ const calculateLayout = (sections: MapSection[], transitions: MapTransition[], c
     children.forEach(child => {
       if (child !== nodeNumber) {
         const childNode = nodeMap.get(child)
-        if (childNode && childNode.parent === null && child !== 0) {
+        if (childNode && childNode.parent === null) {
           childNode.parent = nodeNumber
           node?.children.push(child)
           calculateDepth(child, depth + 1, visited)
@@ -145,9 +185,23 @@ const calculateLayout = (sections: MapSection[], transitions: MapTransition[], c
     })
   }
 
-  const rootNode = nodeMap.get(0)
-  if (rootNode) {
-    calculateDepth(0, 0, new Set())
+  // Запускаем обход от корня
+  calculateDepth(rootNumber, 0, new Set())
+
+  // Находим все узлы, которые не были посещены (не связаны с корнем)
+  const unvisitedNodes: NodeWithPosition[] = []
+  nodeMap.forEach(node => {
+    if (node.depth === 0 && node.number !== rootNumber) {
+      unvisitedNodes.push(node)
+    }
+  })
+
+  // Для несвязанных узлов назначаем глубину на основе их минимального номера
+  if (unvisitedNodes.length > 0) {
+    const maxDepth = Math.max(...Array.from(nodeMap.values()).map(n => n.depth))
+    unvisitedNodes.forEach((node, idx) => {
+      node.depth = maxDepth + 1 + Math.floor(idx / 10)
+    })
   }
 
   const levelMap = new Map<number, NodeWithPosition[]>()
@@ -158,6 +212,29 @@ const calculateLayout = (sections: MapSection[], transitions: MapTransition[], c
     }
     levelMap.get(node.depth)?.push(node)
   })
+
+  // Если все узлы на одной глубине (нет связей), используем сеточную раскладку
+  const depths = Array.from(levelMap.keys())
+  if (depths.length === 1 && depths[0] === 0 && nodeMap.size > 1) {
+    // Все узлы на depth=0, значит нет transitions - строим сетку
+    const nodesPerRow = Math.ceil(Math.sqrt(nodeMap.size))
+    let index = 0
+    nodeMap.forEach(node => {
+      const row = Math.floor(index / nodesPerRow)
+      const col = index % nodesPerRow
+      const levelWidth = width - 2 * PADDING_X
+      const spacing = Math.max(MIN_NODE_SPACING, levelWidth / Math.max(1, nodesPerRow - 1))
+
+      node.x = PADDING_X + col * spacing
+      node.y = PADDING_Y + row * LEVEL_HEIGHT
+      index++
+    })
+
+    // Пересчитываем requiredHeight для сетки
+    const rows = Math.ceil(nodeMap.size / nodesPerRow)
+    const newRequiredHeight = PADDING_Y * 2 + rows * LEVEL_HEIGHT
+    return { nodes: Array.from(nodeMap.values()), edges: [], requiredHeight: newRequiredHeight }
+  }
 
   const maxDepth = Math.max(...Array.from(levelMap.keys()))
   const requiredHeight = PADDING_Y * 2 + (maxDepth + 1) * LEVEL_HEIGHT
@@ -179,7 +256,7 @@ const calculateLayout = (sections: MapSection[], transitions: MapTransition[], c
     })
   })
 
-  const edges = transitions.map(transition => {
+  const edges = safeTransitions.map(transition => {
     const fromNode = nodeMap.get(transition.from_section)
     const toNode = nodeMap.get(transition.to_section)
 
@@ -215,8 +292,8 @@ const updateLayout = () => {
   }
   const canvasWidth = getContainerWidth()
   layoutData.value = calculateLayout(
-    mapData.value.sections,
-    mapData.value.transitions,
+    mapData.value.sections ?? [],
+    mapData.value.transitions ?? [],
     mapStore.currentSectionNumber,
     canvasWidth
   )

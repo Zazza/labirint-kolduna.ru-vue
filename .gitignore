@@ -41,3 +41,8 @@ __screenshots__/
 # Environment variables
 .env
 
+.idea/
+
+.claude/
+CLAUDE.md
+KODA.md

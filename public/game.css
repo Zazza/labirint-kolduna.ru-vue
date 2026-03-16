@@ -1,5 +1,5 @@
 body {
-    font-family: "Garamond", "Times New Roman", serif;
+    font-family: "Literata", serif;
     font-weight: 400;
     text-rendering: optimizeLegibility;
     font-variant-ligatures: contextual;
@@ -129,17 +129,18 @@ body {
 }
 
 .chapter-header {
+    font-family: Ruslan Display, serif;
     text-align: center;
     padding-bottom: 24px;
 }
 
 .section-text {
-    font-size: 18px;
+    font-size: 16px;
     line-height: 1.9;
     color: #3d2817;
     text-align: justify;
     white-space: pre-wrap;
-    text-shadow: 0 0 0.5px rgba(0, 0, 0, 0.1);
+    text-shadow: 0 0 1px rgba(0, 0, 0, 0.1);
 }
 
 /* Красная строка - отступ первой строки каждого абзаца */
@@ -193,9 +194,5 @@ a {
 
     .chapter-number {
         font-size: 22px;
-    }
-
-    .section-text {
-        font-size: 16px;
     }
 }

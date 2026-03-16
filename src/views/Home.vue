@@ -3,6 +3,7 @@ import {computed, nextTick, onMounted, ref} from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useGameStore } from '@/stores/game'
 import { useRouter } from 'vue-router'
+import {sanitizeHTML} from '@/utils/sanitize'
 import type {BonusDTO, PlayerInfoBonus, SectionChoiceItems} from "@/types";
 import {
   Bonus,
@@ -46,8 +47,6 @@ const goRules = () => {
 }
 
 onMounted(() => {
-  console.log('Home mounted, isAuthenticated:', authStore.isAuthenticated)
-
   if (authStore.isAuthenticated) {
     gameStore.getSection()
   }
@@ -146,11 +145,11 @@ const handleLogout = async () => {
 
       <!-- Текст книги -->
       <div v-if="authStore.isAuthenticated" class="book-content">
-        <div class="section-text" v-if="gameActionContent" v-html="gameActionContent.content"></div>
+        <div class="section-text" v-if="gameActionContent && gameActionContent.content" v-html="sanitizeHTML(gameActionContent.content)"></div>
       </div>
 
       <div v-if="authStore.isAuthenticated" class="book-content">
-        <div class="section-text" v-if="gameSection && !gameActionContent" v-html="gameSection.text"></div>
+        <div class="section-text" v-if="gameSection && !gameActionContent" v-html="sanitizeHTML(gameSection.text)"></div>
       </div>
 
       <!-- Сноски внизу страницы -->
@@ -182,12 +181,12 @@ const handleLogout = async () => {
               <label>
                 <input
                     type="checkbox"
-                    :id="(item as any).Name"
-                    :value="(item as any).Name"
+                    :id="item.Name"
+                    :value="item.Name"
                     v-model="selectedItems"
-                    :disabled="(gameSection.choice?.MaxSelections !== undefined && selectedItems.length >= gameSection.choice.MaxSelections) && !((item as any).Name && selectedItems.includes((item as any).Name))"
+                    :disabled="(gameSection.choice?.MaxSelections !== undefined && selectedItems.length >= gameSection.choice.MaxSelections) && !(item.Name && selectedItems.includes(item.Name))"
                 />
-                {{ (item as any).Description }}
+                {{ item.Description }}
               </label>
             </li>
           </ul>
@@ -308,7 +307,7 @@ const handleLogout = async () => {
 
 .footnote-list .transition-visited:hover {
   color: #2c1810;
-  border-bottom: apx solid;
+  border-bottom: 1px solid;
 }
 
 /* Блок выбора */

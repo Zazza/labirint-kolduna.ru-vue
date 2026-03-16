@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { authService } from '@/services/auth'
+import { isTokenValid } from '@/utils/jwt'
 import Home from '@/views/Home.vue'
 import Profile from '@/views/Profile.vue'
 import Rules from '@/views/Rules.vue'
@@ -62,7 +63,7 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
 
-  // Проверяем токен напрямую, чтобы избежать проблем с реактивностью
+  // Проверяем токен и его валидность
   const hasToken = !!authService.getAccessToken()
 
   // Если маршрут требует аутентификации

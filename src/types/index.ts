@@ -29,7 +29,6 @@ export interface AuthResponse {
 }
 
 export interface AuthUser {
-  name: string;
   isAuthenticated: boolean;
 }
 
@@ -45,7 +44,7 @@ export interface Transition {
 
 export interface SectionChoiceItems {
   Name?: string;
-  Description?: number;
+  Description?: string;
 }
 
 export interface SectionChoice {
@@ -168,3 +167,5 @@ export interface MapData {
   sections: MapSection[]
   transitions: MapTransition[]
 }
+
+export type { GameRequestData } from './requests'

@@ -1,5 +1,5 @@
-import axios, { type AxiosInstance, type AxiosError, type InternalAxiosRequestConfig } from 'axios'
-import type {ActionResponse, ApiResponse, BonusDTO, Section, Profile, MapData} from '@/types'
+import axios, { type AxiosInstance, type AxiosError, type InternalAxiosRequestConfig, type AxiosResponse } from 'axios'
+import type {ActionResponse, ApiResponse, BonusDTO, Section, Profile, MapData, GameRequestData} from '@/types'
 import { useAuthStore } from '@/stores/auth'
 import {authService} from "@/services/auth.ts";
 import {
@@ -16,11 +16,18 @@ import {
 
 const DEFAULT_BASE_URL = `http://${import.meta.env.VITE_BACKEND_HOST || '127.0.0.1'}:${import.meta.env.VITE_BACKEND_PORT || 5000}`
 
+export interface ApiError {
+  error?: string;
+  message?: string;
+}
+
 class HttpService {
-  private client: AxiosInstance
+  private readonly client: AxiosInstance
   private readonly TOKEN_KEY = 'access_token'
   private isRefreshing = false
-  private refreshPromise: Promise<any> | null = null
+  private refreshPromise: Promise<{ success: boolean }> | null = null
+  private refreshRetryCount = 0
+  private readonly MAX_REFRESH_RETRIES = 3
 
   constructor(baseURL: string = DEFAULT_BASE_URL) {
     this.client = axios.create({
@@ -31,51 +38,37 @@ class HttpService {
       },
     })
 
-
-    // Интерцепторы для логирования
-    this.client.interceptors.request.use(
-      (config) => {
-        console.log(`[HTTP] ${config.method?.toUpperCase()} ${config.url}`)
-        return config
-      },
-      (error) => {
-        console.error('[HTTP] Request error:', error)
-        return Promise.reject(error)
-      }
-    )
-
+    // Интерцептор для обработки ошибок и обновления токена
     this.client.interceptors.response.use(
-      (response) => {
-        console.log(`[HTTP] Response:`, response.data)
-        return response
-      },
+      (response) => response,
       async (error: AxiosError) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
 
         // Проверяем, что ошибка связана с токеном
         const isTokenError =
           error.response?.status === 401 ||
-          (error.response?.data as any)?.error === 'token not valid' ||
-          (error.response?.data as any)?.error?.toLowerCase()?.includes('token')
-
-        console.log('[HTTP] Response error, isTokenError:', isTokenError, 'status:', error.response?.status, 'data:', error.response?.data)
+          (error.response?.data as ApiError)?.error === 'token not valid' ||
+          (error.response?.data as ApiError)?.error?.toLowerCase()?.includes('token')
 
         // Если это ошибка токена и мы ещё не пробовали повторить запрос
         if (isTokenError && !originalRequest._retry) {
-          console.log('[HTTP] Token error, trying refresh...')
           originalRequest._retry = true
 
           try {
+            // Проверяем лимит попыток обновления
+            if (this.refreshRetryCount >= this.MAX_REFRESH_RETRIES) {
+              await useAuthStore().logout()
+              window.location.href = '/auth'
+              return Promise.reject(error)
+            }
+
             // Получаем authStore
             const authStore = useAuthStore()
-            console.log('[HTTP] authStore credentials:', authStore)
 
             // Если уже идёт обновление, ждём его завершения
             if (this.isRefreshing && this.refreshPromise) {
-              console.log('[HTTP] Already refreshing, waiting...')
               await this.refreshPromise
             } else {
-              console.log('[HTTP] Starting refresh...')
               this.isRefreshing = true
               this.refreshPromise = authStore.autoRefresh()
               await this.refreshPromise
@@ -85,7 +78,6 @@ class HttpService {
 
             // Получаем новый токен
             const newToken = this.getAccessToken()
-            console.log('[HTTP] New token after refresh:', newToken ? 'exists' : 'null')
 
             // Обновляем заголовок в оригинальном запросе
             if (newToken && originalRequest.headers) {
@@ -95,8 +87,7 @@ class HttpService {
             // Повторяем оригинальный запрос
             return this.client(originalRequest)
           } catch (refreshError) {
-            // Если refresh не удался, редиректим на страницу логина
-            console.log('[HTTP] Token refresh failed:', refreshError)
+            this.refreshRetryCount++
             await useAuthStore().logout()
             window.location.href = '/auth'
             return Promise.reject(refreshError)
@@ -123,7 +114,6 @@ class HttpService {
 
       return response.data.data ?? null
     } catch (error) {
-      console.log('[HTTP] getCurrentSection error:', error)
       return null
     }
   }
@@ -131,7 +121,6 @@ class HttpService {
   async getProfile(): Promise<Profile | null> {
     try {
       const token = this.getAccessToken()
-      console.log('[HTTP] getProfile token:', token ? 'exists' : 'null')
       const response = await this.client.get<ApiResponse<Profile>>('/api/game/profile', {
         headers: {
           Authorization: `Bearer ${token}`
@@ -139,8 +128,7 @@ class HttpService {
       })
 
       return response.data.data ?? null
-    } catch (error: any) {
-      console.log('[HTTP] getProfile error:', error.response?.status, error.response?.data || error.message)
+    } catch (error) {
       return null
     }
   }
@@ -152,30 +140,15 @@ class HttpService {
         headers: { Authorization: `Bearer ${token}` }
       })
       return response.data.data ?? null
-    } catch (error: any) {
-      const status = error.response?.status
-      const data = error.response?.data
-
-      if (status === 401) {
-        console.log('[HTTP] getMap error: Unauthorized')
-      } else if (status === 403) {
-        console.log('[HTTP] getMap error: Forbidden')
-      } else if (status === 404) {
-        console.log('[HTTP] getMap error: Not Found')
-      } else if (data?.message) {
-        console.log('[HTTP] getMap error:', data.message)
-      } else {
-        console.log('[HTTP] getMap error:', error.message || 'Unknown error')
-      }
-
+    } catch (error) {
       return null
     }
   }
 
-  async setRequest(requestType: string, data: any): Promise<ActionResponse | null> {
+  async setRequest(requestType: string, data: GameRequestData): Promise<ActionResponse | null> {
     try {
       const token = this.getAccessToken()
-      let response: any = null;
+      let response: AxiosResponse<ApiResponse<ActionResponse>> | null = null;
 
       switch (requestType) {
         case Choice:
@@ -245,7 +218,6 @@ class HttpService {
 
       return response?.data?.data ?? null
     } catch (error) {
-        console.error('Server responded:', error);
         return null
       }
     }

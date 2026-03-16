@@ -8,13 +8,11 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<AuthUser | null>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
-  const credentials = ref<AuthCredentials | null>(null) // Храним учётные данные для refresh
-  let isRefreshing = false // Флаг для предотвращения множественных запросов refresh
-  let refreshPromise: Promise<any> | null = null // Promise для refresh запроса
+  const isRefreshing = ref(false)
+  const refreshPromise = ref<Promise<{ success: boolean }> | null>(null)
 
   // Вычисляемые свойства
   const isAuthenticated = computed(() => authService.isAuthenticated())
-  const userName = computed(() => user.value?.name || null)
 
   // Действия
   const register = async (credentials: AuthCredentials) => {
@@ -42,14 +40,13 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       await authService.login(creds)
-      credentials.value = creds
       user.value = {
-        name: creds.name,
         isAuthenticated: true
       }
       return { success: true }
-    } catch (err: any) {
-      return { success: false, error: err?.response.data.error }
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: { error?: string } } }
+      return { success: false, error: errorObj?.response?.data?.error ?? 'Ошибка входа' }
     } finally {
       isLoading.value = false
     }
@@ -62,7 +59,6 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       await authService.logout()
       user.value = null
-      credentials.value = null // Очищаем учётные данные
       return { success: true }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Ошибка выхода'
@@ -76,21 +72,8 @@ export const useAuthStore = defineStore('auth', () => {
   // Проверка состояния при загрузке приложения
   const checkAuth = () => {
     if (authService.isAuthenticated()) {
-      const token = authService.getAccessToken()
-      const savedCredentials = authService.getCredentials()
-
-      console.log('[Auth] checkAuth - token:', token ? 'exists' : 'null')
-      console.log('[Auth] checkAuth - savedCredentials:', savedCredentials)
-
-      // Восстанавливаем сохранённые учётные данные
-      if (savedCredentials) {
-        credentials.value = savedCredentials
-        console.log('[Auth] credentials restored')
-      }
-
       // В реальном приложении здесь можно декодировать JWT для получения имени
       user.value = {
-        name: 'User',
         isAuthenticated: true
       }
     }
@@ -102,41 +85,27 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Автоматическое обновление токена
   const autoRefresh = async () => {
-    console.log('[Auth] autoRefresh start, credentials:', credentials.value)
-
     // Если уже идёт обновление, возвращаем существующий promise
-    if (isRefreshing && refreshPromise) {
-      console.log('[Auth] already refreshing')
-      return refreshPromise
+    if (isRefreshing.value && refreshPromise.value) {
+      return refreshPromise.value
     }
 
-    // Если нет учётных данных, не можем обновить токен
-    if (!credentials.value) {
-      console.log('[Auth] no credentials!')
-      await logout()
-      throw new Error('Нет учётных данных для обновления токена')
-    }
-
-    isRefreshing = true
+    isRefreshing.value = true
     const refreshToken = authService.getRefreshToken()
-    console.log('[Auth] refreshToken from storage:', refreshToken)
-    refreshPromise = (async () => {
+    refreshPromise.value = (async () => {
       try {
-        console.log('[Auth] calling refresh API with token:', refreshToken)
         await authService.refresh(refreshToken!)
-        console.log('[Auth] refresh OK')
         return { success: true }
       } catch (err) {
-        console.log('[Auth] refresh error:', err)
         await logout()
         throw err
       } finally {
-        isRefreshing = false
-        refreshPromise = null
+        isRefreshing.value = false
+        refreshPromise.value = null
       }
     })()
 
-    return refreshPromise
+    return refreshPromise.value
   }
 
   return {
@@ -147,7 +116,6 @@ export const useAuthStore = defineStore('auth', () => {
 
     // Вычисляемые свойства
     isAuthenticated,
-    userName,
 
     // Действия
     register,

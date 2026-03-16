@@ -61,7 +61,6 @@ const handleSubmit = async () => {
 
   if (!result.success) {
     const errorText = result.error?.toLowerCase() || ''
-    console.log('errorText', errorText)
 
     if (errorText.includes('user already exist')) {
       formError.value = 'Имя пользователя уже занято'

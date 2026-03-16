@@ -161,7 +161,7 @@ const calculateLayout = (sections: MapSection[], transitions: MapTransition[], c
   const minNumber = Math.min(...safeSections.map(s => s.number))
 
   // Используем первую корневую секцию или секцию с минимальным номером
-  const rootNumber = rootCandidates.length > 0 ? rootCandidates[0].number : minNumber
+  const rootNumber = rootCandidates.length > 0 ? rootCandidates[0]?.number ?? minNumber : minNumber
 
   const calculateDepth = (nodeNumber: number, depth: number, visited: Set<number>): void => {
     if (visited.has(nodeNumber)) return
@@ -341,7 +341,14 @@ const handleCanvasClick = (event: MouseEvent) => {
     const distance = Math.sqrt((x - node.x) ** 2 + (y - node.y) ** 2)
 
     if (distance <= NODE_RADIUS) {
-      mapStore.selectNode(node)
+      const mapNode: MapSection = {
+        id: `${node.number}`,
+        number: node.number,
+        title: node.title,
+        is_visited: node.is_visited,
+        is_current: node.is_virtual
+      }
+      mapStore.selectNode(mapNode)
       break
     }
   }

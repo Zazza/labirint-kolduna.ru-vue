@@ -42,8 +42,8 @@ export const useMapStore = defineStore('map', () => {
     }
   }
 
-  const selectNode = (node: object): void => {
-    selectedNode.value = node as MapSection
+  const selectNode = (node: MapSection): void => {
+    selectedNode.value = node
   }
 
   const clearSelection = (): void => {

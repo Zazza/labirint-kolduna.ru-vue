@@ -1,5 +1,6 @@
 import axios, { type AxiosInstance } from 'axios'
 import type {ApiResponse, AuthCredentials, AuthTokens, RegisterResponse} from '@/types'
+import type { ApiError } from '@/services/http'
 
 const DEFAULT_BASE_URL = `http://${import.meta.env.VITE_BACKEND_HOST || '127.0.0.1'}:${import.meta.env.VITE_BACKEND_PORT || 5000}`
 
@@ -7,7 +8,6 @@ class AuthService {
   private client: AxiosInstance
   private readonly TOKEN_KEY = 'access_token'
   private readonly REFRESH_TOKEN_KEY = 'refresh_token'
-  private readonly CREDENTIALS_KEY = 'user_credentials'
 
   constructor(baseURL: string = DEFAULT_BASE_URL) {
     this.client = axios.create({
@@ -18,27 +18,15 @@ class AuthService {
       },
     })
 
-    // Интерцепторы для логирования
+    // Интерцепторы для обработки ошибок
     this.client.interceptors.request.use(
-      (config) => {
-        console.log(`[Auth] ${config.method?.toUpperCase()} ${config.url}`)
-        return config
-      },
-      (error) => {
-        console.error('[Auth] Request error:', error)
-        return Promise.reject(error)
-      }
+      (config) => config,
+      (error) => Promise.reject(error)
     )
 
     this.client.interceptors.response.use(
-      (response) => {
-        console.log(`[Auth] Response:`, response.data)
-        return response
-      },
-      (error) => {
-        console.error('[Auth] Response error:', error.response?.data || error.message)
-        return Promise.reject(error)
-      }
+      (response) => response,
+      (error) => Promise.reject(error)
     )
   }
 
@@ -62,19 +50,8 @@ class AuthService {
   clearTokens(): void {
     localStorage.removeItem(this.TOKEN_KEY)
     localStorage.removeItem(this.REFRESH_TOKEN_KEY)
-    localStorage.removeItem(this.CREDENTIALS_KEY)
   }
 
-  // Сохранение учётных данных
-  saveCredentials(credentials: AuthCredentials): void {
-    localStorage.setItem(this.CREDENTIALS_KEY, JSON.stringify(credentials))
-  }
-
-  // Получение учётных данных
-  getCredentials(): AuthCredentials | null {
-    const data = localStorage.getItem(this.CREDENTIALS_KEY)
-    return data ? JSON.parse(data) : null
-  }
 
   // Проверка авторизации
   isAuthenticated(): boolean {
@@ -89,8 +66,9 @@ class AuthService {
           credentials
       )
       return {status: true, message: response?.data.data.message}
-    } catch (err: any) {
-      return err.response?.data
+    } catch (err: unknown) {
+      const errorObj = err as { response?: { data?: RegisterResponse } }
+      return errorObj.response?.data ?? { status: false, error: 'Ошибка регистрации', message: '' }
     }
   }
 
@@ -103,7 +81,6 @@ class AuthService {
     const tokens = response.data.data
 
     this.saveTokens(tokens)
-    this.saveCredentials(credentials) // Сохраняем учётные данные
     return tokens
   }
 
@@ -113,7 +90,6 @@ class AuthService {
       '/api/auth/refresh',
       { refresh_token: refreshToken }
     )
-    console.log('[AuthService] refresh response:', response.data)
     const tokens = response.data.data
     this.saveTokens(tokens)
     return tokens
@@ -122,15 +98,8 @@ class AuthService {
   // Логаут
   async logout(): Promise<void> {
     try {
-      this.getAccessToken()
-//      await this.client.post('/api/auth/logout', {}, {
-//        headers: {
-//          Authorization: `Bearer ${token}`
-//        }
-//      })
+      this.clearTokens()
     } catch (error) {
-      console.error('[Auth] Logout error:', error)
-    } finally {
       this.clearTokens()
     }
   }

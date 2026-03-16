@@ -2,7 +2,7 @@ import {defineStore} from 'pinia'
 import {computed, ref} from 'vue'
 import {httpService} from '@/services/http'
 import {authService} from "@/services/auth.ts";
-import type {Section, ActionResponse, BonusDTO} from '@/types'
+import type {Section, ActionResponse, BonusDTO, GameRequestData} from '@/types'
 import {
   Bonus,
   BribeChoice,
@@ -16,29 +16,17 @@ import {
 } from "@/types/requestType.ts";
 
 export const useGameStore = defineStore('game', () => {
-  const isConnected = ref(false)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
-  const backendStatus = ref<'unknown' | 'online' | 'offline'>('unknown')
   const section = ref<Section | null>(null)
   const action = ref<ActionResponse | null>(null)
-
-  // Действия
-  const initializeBackend = async () => {
-    isLoading.value = true
-    error.value = null
-  }
-
-  const disconnect = () => {
-    isConnected.value = false
-    backendStatus.value = 'unknown'
-  }
 
   const clearError = () => {
     error.value = null
   }
 
   const getSection = async () => {
+    isLoading.value = true
     if (authService.isAuthenticated()) {
       try {
         section.value = await httpService.getSection()
@@ -55,7 +43,7 @@ export const useGameStore = defineStore('game', () => {
     }
   }
 
-  const setRequest = async (requestType: string, data: any) => {
+  const setRequest = async (requestType: string, data: GameRequestData) => {
     if (authService.isAuthenticated()) {
       switch (requestType) {
         case Choice:
@@ -82,16 +70,12 @@ export const useGameStore = defineStore('game', () => {
 
   return {
     // Состояние
-    isConnected,
     isLoading,
     error,
-    backendStatus,
     section,
     action,
 
     // Действия
-    initializeBackend,
-    disconnect,
     clearError,
     getSection,
     setRequest,

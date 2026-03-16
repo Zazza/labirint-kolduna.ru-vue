@@ -1,18 +1,11 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
-import { useGameStore } from '@/stores/game'
+import { onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 
-const gameStore = useGameStore()
 const authStore = useAuthStore()
 
 onMounted(() => {
-  gameStore.initializeBackend()
-})
-
-onUnmounted(() => {
-  // Отключаемся при закрытии приложения
-  //gameStore.disconnect()
+  authStore.checkAuth()
 })
 </script>
 

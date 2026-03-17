@@ -14,7 +14,7 @@ import {
   SleepyChoice
 } from "@/types/requestType.ts";
 
-const DEFAULT_BASE_URL = `http://${import.meta.env.VITE_BACKEND_HOST || '127.0.0.1'}:${import.meta.env.VITE_BACKEND_PORT || 5000}`
+const DEFAULT_BASE_URL = `https://${import.meta.env.VITE_BACKEND_HOST || '127.0.0.1'}:${import.meta.env.VITE_BACKEND_PORT || 5000}`
 
 export interface ApiError {
   error?: string;

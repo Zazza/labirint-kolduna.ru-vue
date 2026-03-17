@@ -13,7 +13,7 @@ export default defineConfig({
     cors: true, // Разрешает CORS
   },
   //devServer: {
-    //proxy: 'http://localhost:5000' // Ваш сервер API
+    //proxy: 'https://localhost:5000' // Ваш сервер API
   //},
   plugins: [
     vue(),

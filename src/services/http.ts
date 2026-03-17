@@ -1,7 +1,6 @@
 import axios, { type AxiosInstance, type AxiosError, type InternalAxiosRequestConfig, type AxiosResponse } from 'axios'
-import type {ActionResponse, ApiResponse, BonusDTO, Section, Profile, MapData, GameRequestData} from '@/types'
+import type {ActionResponse, ApiResponse, Section, Profile, MapData, GameRequestData} from '@/types'
 import { useAuthStore } from '@/stores/auth'
-import {authService} from "@/services/auth.ts";
 import {
   Bonus,
   BribeChoice,
@@ -14,7 +13,7 @@ import {
   SleepyChoice
 } from "@/types/requestType.ts";
 
-const DEFAULT_BASE_URL = `https://${import.meta.env.VITE_BACKEND_HOST || '127.0.0.1'}:${import.meta.env.VITE_BACKEND_PORT || 5000}`
+const DEFAULT_BASE_URL = `${import.meta.env.VITE_BACKEND_PROTOCOL || 'http'}://${import.meta.env.VITE_BACKEND_HOST || '127.0.0.1'}:${import.meta.env.VITE_BACKEND_PORT || 5000}`
 
 export interface ApiError {
   error?: string;

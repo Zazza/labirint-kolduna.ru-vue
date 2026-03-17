@@ -1,8 +1,7 @@
 import axios, { type AxiosInstance } from 'axios'
-import type {ApiResponse, AuthCredentials, AuthTokens, RegisterResponse} from '@/types'
-import type { ApiError } from '@/services/http'
+import type {AuthCredentials, AuthTokens, RegisterResponse} from '@/types'
 
-const DEFAULT_BASE_URL = `https://${import.meta.env.VITE_BACKEND_HOST || '127.0.0.1'}:${import.meta.env.VITE_BACKEND_PORT || 5000}`
+const DEFAULT_BASE_URL = `${import.meta.env.VITE_BACKEND_PROTOCOL || 'http'}://${import.meta.env.VITE_BACKEND_HOST || '127.0.0.1'}:${import.meta.env.VITE_BACKEND_PORT || 5000}`
 
 class AuthService {
   private client: AxiosInstance
